@@ -36,7 +36,7 @@ class Player
 end
 
 class Room
-	attr_reader :description, :position
+	attr_reader :description, :position, :items, :endRoom 
 	attr_accessor :doors
 	def initialize description="", valid=false, endRoom=false, doors=[], items=[], position 
 		@description=description
@@ -83,7 +83,7 @@ class Room
 end
 
 class Map
-	attr_reader :map
+	attr_accessor :map
 	attr_reader :initRoom
 	def initialize(numRooms, items, descriptions)
 		@map=Hash.new
@@ -112,8 +112,8 @@ class Map
 			nextCuad=rand(4)
 			puts nextCuad
 			case(nextCuad.to_i)
-			when 0
-				if(!@map[actualPosition+1])
+				when 0
+					if(!@map[actualPosition+1])
 							#E
 							@map[actualPosition+1]=Room.new(description,true,endRoom,["W"],item,[actualPosition+1])			
 							find=true
@@ -124,65 +124,66 @@ class Map
 							actualPosition=actualPosition+1
 						end
 
-					when 1
+				when 1
 
-						if (!@map[actualPosition-1])
-							@map[actualPosition-1]=Room.new(description,true,endRoom,["E"],item,[actualPosition-1])
-							#W
-							find=true
-							#binding.pry
-							@map[actualPosition].doors.push("W")
-							return actualPosition-1
-						else
-							@map[actualPosition-1].doors.push("E","W")
-							actualPosition=actualPosition-1
-						end
+					if (!@map[actualPosition-1])
+						@map[actualPosition-1]=Room.new(description,true,endRoom,["E"],item,[actualPosition-1])
+						#W
+						find=true
+						#binding.pry
+						@map[actualPosition].doors.push("W")
+						return actualPosition-1
+					else
+						@map[actualPosition-1].doors.push("E","W")
+						actualPosition=actualPosition-1
+					end
 
 
-					when 2
+				when 2
 					#binding.pry
 					
 					if (!@map[actualPosition+10])
 						@map[actualPosition+10]=Room.new(description,true,endRoom,["S"],item,[actualPosition+10])
-							#N
-							find=true
-							@map[actualPosition].doors.push("N")
-							return actualPosition+10
-						else
-							@map[actualPosition+10].doors.push("S","N") 
-							actualPosition=actualPosition+10
-						end
-
-
-					when 3
-
-						if (!@map[actualPosition-10])
-							@map[actualPosition-10]=Room.new(description,true,endRoom,["N"],item,[actualPosition-10])
-							#S
-							find=true
-							@map[actualPosition].doors.push("S")
-							return actualPosition-10
-						else
-							@map[actualPosition-10].doors.push("N","S")
-							actualPosition=actualPosition-10
-						end
-
+						#N
+						find=true
+						@map[actualPosition].doors.push("N")
+						return actualPosition+10
+					else
+						@map[actualPosition+10].doors.push("S","N") 
+						actualPosition=actualPosition+10
 					end
-				end
-			end
 
-			def getRoom(position)
-				@map[position]
+
+				when 3
+
+					if (!@map[actualPosition-10])
+						@map[actualPosition-10]=Room.new(description,true,endRoom,["N"],item,[actualPosition-10])
+						#S
+						find=true
+						@map[actualPosition].doors.push("S")
+						return actualPosition-10
+					else
+						@map[actualPosition-10].doors.push("N","S")
+						actualPosition=actualPosition-10
+					end
+
+				end
 			end
 		end
 
+		def getRoom(position)
+			@map[position]
+		end
+	end
+
 		class Game
-			attr_accessor :rooms_descriptions, :items
+			attr_accessor :rooms_descriptions, :items, :gameMap, :player
 			def initialize
 				@items=Items.new
 				@rooms_descriptions=RoomsDescriptions.new
 				@gameMap=Map.new(10,@items,@rooms_descriptions)
 				@player=Player.new(@gameMap.initRoom, 3)
+				@gameStatus=SaveGameStatus.new
 			end
 
 			def printGameStatus
@@ -233,8 +234,16 @@ class Map
 					end
 				when /INVENTORY/
 					@player.printInventory
+				when /SAVE/
+					@gameStatus.save(@gameMap,@player)
+					puts ("Game status saved OK")
+				when /LOAD/
+					@gameMap=@gameStatus.load(@gameMap,@player)[0]
+					@player=@gameStatus.load(@gameMap,@player)[1]
+					system("clear")
+					puts ("Game load OK")
 				else
-					puts ("invalid command, the commands are N, S, E, W, TAKE item, DROP item, INVENTORY")
+					puts ("invalid command, the commands are N, S, E, W, TAKE item, DROP item, INVENTORY ,SAVE, LOAD")
 				end
 			end
 		end
@@ -254,6 +263,26 @@ class Map
 					"You are in the forest. There is a lot of ligh.",
 					"You are in a light room."]
 				end
-			end
+		end
 
-			Game.new.gameNavigation
+		class SaveGameStatus
+			def initialize 
+				
+				#game_map.each {|room| puts "#{room}"}
+			end
+			def save game_map, player
+				saveData=[]
+				saveData.push(game_map)
+				saveData.push(player)
+				IO.write("saveFile.log",Marshal.dump(saveData)) 
+				#(game_map.map.collect {|key,room| "[#{key}, #{room.description}, #{room.doors}, #{room.position}, #{room.items}, #{room.endRoom}]"})	
+			end
+			def load game_map, player
+				saveData=[]
+				load=IO.read("saveFile.log")
+				saveData=Marshal.load(load)
+				return saveData
+			end
+		end
+
+	Game.new.gameNavigation
