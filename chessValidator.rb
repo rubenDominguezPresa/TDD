@@ -5,18 +5,18 @@ class ChessValidator
 		@board=Board.new
 		@pieceTypes={"wP"=> "P", "bP"=> "P","wR"=> "R", "bR"=> "R","wN"=> "N", "bN"=> "N","wB"=> "B", "bB"=> "B","wQ"=> "Q", "bQ"=> "Q","wK"=> "K", "bK"=> "K"}
 		@coordToArray=CoordToArray.new
+		FileUtilities.empty_file "output.txt"
 		
 		#arrayMoves.each {|piece| }
 	end
 	def check_move origin, destiny
-		puts coorOrigin=@coordToArray.translate(origin)
-		puts coorDestini=@coordToArray.translate(destiny)
-		puts name=@pieceTypes[@board.getPiece(coorOrigin)]
-		
-		if (@board.getPiece(coorDestini))
-			puts Piece.move?(coorOrigin,coorDestini,name)
+		coorOrigin=@coordToArray.translate(origin)
+		coorDestini=@coordToArray.translate(destiny)
+		name=@pieceTypes[@board.getPiece(coorOrigin)]
+		if (@board.getPiece(coorDestini) && @board.getPiece(coorDestini)=="--")
+			puts Piece.move?(coorOrigin,coorDestini,name) ? FileUtilities.write_file("LEGAL","output.txt") : FileUtilities.write_file("ILLEGAL","output.txt")
 		else
-			puts "invalid"   		
+			puts FileUtilities.write_file("ILLEGAL","output.txt")   		
 		end
 	end
 end
@@ -51,7 +51,7 @@ class Piece
 			when "Q"
 				Queen.valid_moves(origin, destiny)
 			when "K"
-				King.move(origin destiny)
+				King.move(origin, destiny)
 		end
 	end
 	
@@ -84,24 +84,40 @@ end
 
 class Rook < Piece
 	def self.valid_moves origin, destiny
+		puts "Rook"
 		(Moves.horizontal?(origin,destiny)) || (Moves.vertical?(origin,destiny))
 	end
 end
 
 class Bishop < Piece
 	def self.valid_moves origin, destiny
+		puts "Bishop"
 		Moves.diagonal? origin, destiny
 	end
 end
 
 class Queen < Piece
 	def self.valid_moves origin, destiny
+		puts "Queen"
 		((Moves.vertical? origin, destiny) || (Moves.horizontal? origin, destiny) || (Moves.diagonal? origin, destiny)) 
 	end
 end
 
 class Knight < Piece
 	def self.valid_moves origin, destiny
+		#if (origin[0]+1==destiny[0] || origin[0]-1==destiny[0])
+		#	(origin[1]+2==destiny[1] || origin[1]-2==destiny[1])
+		#elsif (origin[0]+2==destiny[0] || origin[0]-2==destiny[0])
+		#	(origin[1]+1==destiny[1] || origin[1]-1==destiny[1])
+		#end
+		puts "Knight"
+		moves=[[1,-2],[2,-1],[2,1],[1,2],[-1,2],[-2,1],[-2,-1],[-1,-2]]
+		find=false
+		i=0
+		while (!find && i<8) do
+			destiny==[((origin[0])+(moves[i][0])),(origin[1]+moves[i][1])] ? find=true : i=i+1
+		end
+		find ? true : false
 		#((Moves.horizontal?(origin, destiny)) && (Moves.vertical?(origin, destiny)))
 		#Moves.diagonal? origin, destiny
 	end
@@ -109,12 +125,20 @@ end
 
 class Pawn < Piece
 	def self.valid_moves origin, destiny
-		((Moves.vertical?) && ((origin[0]+1)==destiny[0]))
+		puts "Pawn"
+		if (origin[0]==1)
+			((Moves.vertical? origin, destiny) && (((origin[0]+1)==destiny[0]) || ((origin[0]+2)==destiny[0])))
+		elsif (origin[0]==6)	
+			((Moves.vertical? origin, destiny) && (((origin[0]-1)==destiny[0]) || ((origin[0]-2)==destiny[0])))
+		else
+			((Moves.vertical? origin, destiny) && (((origin[0]-1)==destiny[0]) || ((origin[0]+1)==destiny[0])))
+		end
 	end
 end
 
 class King < Piece
 	def self.valid_moves origin, destiny
+		puts "King"
 		if Queen.valid_moves(origin,destiny)
 			compare1=origin[0]-destiny[0]
 			compare2=origin[1]-destiny[1]
@@ -136,7 +160,7 @@ class CoordToArray
 	end
 
 	def translate coord
-		return [@corAH[coord[0]],(coord[1].to_i-1)]
+		return [(coord[1].to_i-1),@corAH[coord[0]]]
 	end
 end
 
@@ -148,9 +172,17 @@ class FileUtilities
 		end
 		return arrayReg
 	end
+	def self.empty_file file
+		File.open(file,"w"){}
+	end
+	def self.write_file output, file
+		File.open(file, "a") { |f| f.puts output}
+	end
 end
 
 #FileUtilities.read_file "board.txt"
-
-ChessValidator.new.check_move("a1","a2")
+moves=FileUtilities.read_file "moves.txt"
+chess=ChessValidator.new
+moves.each{|move| chess.check_move(move[0],move[1]) }
+#chess.check_move("a2","a3")
 
