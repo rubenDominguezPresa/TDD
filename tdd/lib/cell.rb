@@ -19,7 +19,7 @@ class Cell
 
   def born
     neighbounds_num=count_live_neighbours
-    neighbounds_num==3 ? @state=1 : @state=@state
+    (@state==0 && neighbounds_num==3) ? @state=1 : @state=@state
     @state
   end
 

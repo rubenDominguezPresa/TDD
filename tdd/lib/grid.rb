@@ -23,7 +23,6 @@ class Grid
 		neigh_status << ((x+1<@grid.size && y+1<@grid[0].size) ? (@grid[x+1][y+1].state) : 0)
 		neigh_status << ((x+1<@grid.size) ? (@grid[x+1][y].state) : 0)
 	end
-
 	def updateCellsState
 		for i in 0..@grid.size-1
 			for j in 0..@grid[i].size-1

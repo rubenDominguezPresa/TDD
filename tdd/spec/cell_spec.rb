@@ -4,7 +4,6 @@ require_relative "../lib/cell"
 require "spec_helper"
 
 describe Cell do 
-
   describe '#regenerate' do
     it "regenerates a live cell from a live cell if it has 2 neighbours" do
       cell1 = Cell.new(1, [0,0,0,0,0,0,1,1])
